@@ -28,7 +28,7 @@ class Work(BaseModel):
         # TODO: need to follow pagination here
         soup = BeautifulSoup(raw_html, "html.parser")
 
-        goodreads_work_id: str = get_entity_id_from_canonical_url(soup)
+        goodreads_work_id: int = get_entity_id_from_canonical_url(soup)
 
         author_el_arr = soup.find("h2").find_all("a")
         author_info_arr = [
@@ -54,7 +54,7 @@ class Work(BaseModel):
         )
 
     @staticmethod
-    def get_work_data_by_goodreads_work_id(goodreads_work_id: str) -> Work:
+    def get_work_data_by_goodreads_work_id(goodreads_work_id: int) -> Work:
         response_html = get_html_from_url(
             f"https://www.goodreads.com/work/editions/{goodreads_work_id}?utf8=%E2%9C%93&per_page=100"
         )

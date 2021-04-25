@@ -30,6 +30,7 @@ class Edition(BaseModel):
     isbn_10: Optional[str]
     isbn_13: Optional[str]
     asin: Optional[str]
+    cover_url: Optional[str]
 
     # TODO: add page_count, publisher, published_on
 
@@ -117,6 +118,11 @@ class Edition(BaseModel):
         asin_search: Optional[Match[str]] = re.search(r"asin: (\S{10})", raw_html)
         asin: Optional[str] = asin_search.group(1) if asin_search else None
 
+        cover_url_el = soup.find("img", {"id": "coverImage"})
+        cover_url: Optional[str] = (
+            cover_url_el.attrs.get("src") if cover_url_el else None
+        )
+
         return Edition(
             goodreads_id=goodreads_edition_id,
             goodreads_work_id=goodreads_work_id,
@@ -128,6 +134,7 @@ class Edition(BaseModel):
             isbn_10=isbn_10,
             isbn_13=isbn_13,
             asin=asin,
+            cover_url=cover_url,
         )
 
     @staticmethod
