@@ -7,6 +7,7 @@ from typing import Optional
 from bs4 import BeautifulSoup
 
 from constants import ProviderList
+from models.author import Author
 from models.edition import Edition, EditionAuthorInfo
 from models.work import WorkAuthorInfo, Work
 from providers.abstract_provider import AbstractProvider
@@ -34,6 +35,18 @@ class GoodreadsScraper(AbstractProvider):
         if not canonical_url:
             raise Exception("could not find canonical URL")
         return GoodreadsScraper._get_goodreads_id_from_url(canonical_url)
+
+    @staticmethod
+    def _get_table_contents_map(
+        soup, row_title_class_name: str, row_item_class_name: str
+    ) -> list[dict[str, str]]:
+        row_title_arr = soup.find_all("div", {"class": row_title_class_name})
+        row_item_arr = soup.find_all("div", {"class": row_item_class_name})
+        title_item_map: list[dict[str, str]] = [
+            {"title": title.text, "item": item.text}
+            for title, item in zip(row_title_arr, row_item_arr)
+        ]
+        return title_item_map
 
     @staticmethod
     def _get_edition_data_from_html(raw_html: str) -> Edition:
@@ -99,12 +112,9 @@ class GoodreadsScraper(AbstractProvider):
             languages_el.text.split(",") if languages_el else None
         )
 
-        row_title_arr = soup.find_all("div", {"class": "infoBoxRowTitle"})
-        row_item_arr = soup.find_all("div", {"class": "infoBoxRowItem"})
-        title_item_map: list[dict[str, str]] = [
-            {"title": title.text, "item": item.text}
-            for title, item in zip(row_title_arr, row_item_arr)
-        ]
+        title_item_map: list[dict[str, str]] = GoodreadsScraper._get_table_contents_map(
+            soup, "infoBoxRowTitle", "infoBoxRowItem"
+        )
         filter_for_isbn: list[dict[str, str]] = list(
             filter(lambda el: el["title"].lower() == "isbn", title_item_map)
         )
@@ -142,6 +152,43 @@ class GoodreadsScraper(AbstractProvider):
             isbn_13=isbn_13,
             asin=asin,
             cover_url=cover_url,
+        )
+
+    @staticmethod
+    def _get_author_data_from_html(raw_html: str):
+        soup = BeautifulSoup(raw_html, "html.parser")
+        goodreads_author_id = GoodreadsScraper._get_entity_id_from_canonical_url(soup)
+
+        author_name_el = soup.find("h1", {"class": "authorName"})
+        author_name = author_name_el.text.strip() if author_name_el else None
+        if not author_name:
+            raise Exception(f"No author name found for {goodreads_author_id}")
+
+        author_bio_el = soup.find("div", {"class": "aboutAuthorInfo"})
+        author_bio = (
+            author_bio_el.text.replace("edit data", "").replace("..more", "").strip()
+            if author_name_el
+            else None
+        )
+
+        title_item_map = GoodreadsScraper._get_table_contents_map(
+            soup, "dataTitle", "dataItem"
+        )
+        filtered_author_website_list = list(
+            filter(lambda el: el.get("title") == "Website", title_item_map)
+        )
+        author_website_raw = (
+            filtered_author_website_list[0].get("item")
+            if len(filtered_author_website_list) > 0
+            else None
+        )
+        author_website = author_website_raw.strip() if author_website_raw else None
+        # TODO: add twitter handle, born_place and born_time
+        return Author(
+            provider_id=goodreads_author_id,
+            name=author_name,
+            bio=author_bio,
+            website=author_website,
         )
 
     @staticmethod
@@ -191,6 +238,14 @@ class GoodreadsScraper(AbstractProvider):
     def get_edition_data_from_isbn(isbn: str) -> Edition:
         response_html = get_html_from_url(f"https://www.goodreads.com/search?q={isbn}")
         return GoodreadsScraper._get_edition_data_from_html(response_html)
+
+    @staticmethod
+    def get_author_from_provider_author_id(goodreads_author_id: int) -> Author:
+        print(f"author info: {goodreads_author_id}")
+        response_html = get_html_from_url(
+            f"https://www.goodreads.com/author/show/{goodreads_author_id}"
+        )
+        return GoodreadsScraper._get_author_data_from_html(response_html)
 
     @staticmethod
     def get_edition_from_provider_edition_id(goodreads_edition_id: int) -> Edition:

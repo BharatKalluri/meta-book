@@ -1,6 +1,7 @@
 from abc import ABC
 
 from constants import ProviderList
+from models.author import Author
 from models.edition import Edition
 from models.work import Work
 
@@ -24,4 +25,8 @@ class AbstractProvider(ABC):
 
     @staticmethod
     def get_provider_name() -> ProviderList:
+        pass
+
+    @staticmethod
+    def get_author_from_provider_author_id(goodreads_author_id: int) -> Author:
         pass
