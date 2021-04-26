@@ -11,25 +11,37 @@ from models.edition import Edition, EditionAuthorInfo
 from models.work import WorkAuthorInfo, Work
 from providers.abstract_provider import AbstractProvider
 from utils import (
-    get_entity_id_from_canonical_url,
     get_html_from_url,
 )
+
+FIRST_NUMBER_IN_URL_REGEX = r"/(\d+)"
 
 
 class GoodreadsScraper(AbstractProvider):
     @staticmethod
-    def get_goodreads_id_from_url(url: str) -> int:
-        return int(re.search(r"/(\d+)", url).group(1))
+    def _get_goodreads_id_from_url(url: str) -> int:
+        return int(re.search(FIRST_NUMBER_IN_URL_REGEX, url).group(1))
 
     @staticmethod
     def get_provider_name() -> ProviderList:
         return ProviderList.GOODREADS
 
     @staticmethod
+    def _get_entity_id_from_canonical_url(soup) -> int:
+        canonical_url: Optional[str] = soup.find(
+            "link", {"rel": "canonical"}
+        ).attrs.get("href")
+        if not canonical_url:
+            raise Exception("could not find canonical URL")
+        return GoodreadsScraper._get_goodreads_id_from_url(canonical_url)
+
+    @staticmethod
     def _get_edition_data_from_html(raw_html: str) -> Edition:
         soup = BeautifulSoup(raw_html, "html.parser")
 
-        goodreads_edition_id: int = get_entity_id_from_canonical_url(soup)
+        goodreads_edition_id: int = GoodreadsScraper._get_entity_id_from_canonical_url(
+            soup
+        )
 
         other_edition_actions_el: list = soup.findAll(
             "div", {"class": "otherEditionsActions"}
@@ -39,7 +51,7 @@ class GoodreadsScraper(AbstractProvider):
             if len(other_edition_actions_el) > 0
             else None
         )
-        goodreads_work_id: int = GoodreadsScraper.get_goodreads_id_from_url(
+        goodreads_work_id: int = GoodreadsScraper._get_goodreads_id_from_url(
             all_editions_link
         )
 
@@ -73,7 +85,7 @@ class GoodreadsScraper(AbstractProvider):
             EditionAuthorInfo(
                 name=el.get("name"),
                 comment=el.get("comment"),
-                author_id=GoodreadsScraper.get_goodreads_id_from_url(
+                author_id=GoodreadsScraper._get_goodreads_id_from_url(
                     el.get("author_link")
                 ),
             )
@@ -137,13 +149,15 @@ class GoodreadsScraper(AbstractProvider):
         # TODO: need to follow pagination here
         soup = BeautifulSoup(raw_html, "html.parser")
 
-        goodreads_work_id: int = get_entity_id_from_canonical_url(soup)
+        goodreads_work_id: int = GoodreadsScraper._get_entity_id_from_canonical_url(
+            soup
+        )
 
         author_el_arr = soup.find("h2").find_all("a")
         author_info_arr = [
             WorkAuthorInfo(
                 name=el.text,
-                provider_author_id=GoodreadsScraper.get_goodreads_id_from_url(
+                provider_author_id=GoodreadsScraper._get_goodreads_id_from_url(
                     el.attrs.get("href")
                 ),
             )
@@ -156,7 +170,7 @@ class GoodreadsScraper(AbstractProvider):
             el.attrs.get("href") for el in edition_url_els
         ]
         edition_ids: list[int] = [
-            GoodreadsScraper.get_goodreads_id_from_url(el)
+            GoodreadsScraper._get_goodreads_id_from_url(el)
             for el in complete_edition_urls
         ]
         return Work(
