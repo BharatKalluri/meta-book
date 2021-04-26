@@ -7,7 +7,7 @@ from models.externalLink import ExternalLink
 
 
 class Author(BaseModel):
-    goodreads_id: int
+    provider_id: int
     name: str
     bio: str
     links: list[ExternalLink] = []

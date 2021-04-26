@@ -15,10 +15,6 @@ def get_html_from_url(url: str) -> str:
     return response_html
 
 
-def get_goodreads_id_from_url(url: str) -> int:
-    return int(re.search(r"/(\d+)", url).group(1))
-
-
 def get_entity_id_from_canonical_url(soup) -> int:
     canonical_url: Optional[str] = soup.find("link", {"rel": "canonical"}).attrs.get(
         "href"
