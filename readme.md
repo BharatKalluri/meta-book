@@ -25,7 +25,4 @@ work_id_from_edition: int = edition_data.provider_work_id
 work_info: Work = provider.get_work_data_from_provider_work_id(work_id_from_edition)
 editions: list[Edition] = provider.bulk_fetch_editions(work_info.provider_edition_ids)
 ```
-
-#### Metadata output from the above example
-
-<script src="https://gist.github.com/BharatKalluri/5de1c760ec8c5f5bbfecda6c0117f3cd.js"></script>
+[Metadata output from the above example](https://gist.github.com/BharatKalluri/5de1c760ec8c5f5bbfecda6c0117f3cd)
