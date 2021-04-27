@@ -1,7 +1,7 @@
 # Meta Book
 ### Work in progress 🚧
 
-A library & a command line utility to get data metadata
+A library & a command line utility to get metadata
 of books using different sources (providers)
 
 ### Providers
