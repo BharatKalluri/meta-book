@@ -26,4 +26,6 @@ work_info: Work = provider.get_work_data_from_provider_work_id(work_id_from_edit
 editions: list[Edition] = provider.bulk_fetch_editions(work_info.provider_edition_ids)
 ```
 
-[Output of the above in json]()
+#### Metadata output from the above example
+
+<script src="https://gist.github.com/BharatKalluri/5de1c760ec8c5f5bbfecda6c0117f3cd.js"></script>
